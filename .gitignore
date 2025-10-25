@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDEs
+.vscode/
+.idea/
+
+# Compilados
+[Bb]in/
+[Oo]bj/
+TestResults/
+artifacts/
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
