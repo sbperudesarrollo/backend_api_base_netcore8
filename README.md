@@ -108,9 +108,3 @@ POST /api/auth/password
 
 ## Esquema esperado de la tabla `users`
 El repositorio trabaja con una tabla `users` cuyos campos principales encajan con `Domain/Entities/User.cs`: `id`, `role_id`, `name`, `first_name`, `email`, `password`, `degree_id`, `remember_token`, `phone`, `cip`. Adapta los nombres o los `SELECT` si tu base usa un esquema distinto.
-
-## Siguientes pasos sugeridos
-- Agregar migraciones o scripts para crear la tabla de usuarios en cada proveedor.
-- Incorporar pruebas unitarias o de integracion para `AuthService`, `PasswordService` y `UserRepository`.
-- Conectar con un proveedor de identidad externo o politicas de autorizacion adicionales si el proyecto lo requiere.
-- Ampliar la capa `Application` con nuevos casos de uso alineados al dominio real.
