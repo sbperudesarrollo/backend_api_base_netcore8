@@ -10,11 +10,17 @@ using backend_api_base_netcore8.Infrastructure.Security;
 using backend_api_base_netcore8.Infrastructure.Swagger;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.AddLog4Net("log4net.config");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -45,8 +51,6 @@ builder.Services.AddSwaggerGen(options =>
 
     options.OperationFilter<AuthLoginOperationFilter>();
 });
-
-builder.Services.AddLogging();
 
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
