@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>backend_api_base_netcore8.Domain</AssemblyName>
+    <RootNamespace>backend_api_base_netcore8</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -87,6 +87,6 @@ public class AuthLoginOperationFilter : IOperationFilter
         }
 
         var relativePath = context.ApiDescription.RelativePath;
-        return string.Equals(relativePath, "api/auth/login", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(relativePath, "api/auth/authenticate", StringComparison.OrdinalIgnoreCase);
     }
 }

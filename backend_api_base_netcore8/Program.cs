@@ -1,3 +1,4 @@
+using backend_api_base_netcore8.Application.Configuration;
 using backend_api_base_netcore8.Application.Interfaces;
 using backend_api_base_netcore8.Application.Services;
 using backend_api_base_netcore8.Application.Validators;
@@ -7,6 +8,7 @@ using backend_api_base_netcore8.Infrastructure.Repositories.Oracle;
 using backend_api_base_netcore8.Infrastructure.Repositories.Postgres;
 using backend_api_base_netcore8.Infrastructure.Repositories.Sql;
 using backend_api_base_netcore8.Infrastructure.Security;
+using backend_api_base_netcore8.Infrastructure.Stores;
 using backend_api_base_netcore8.Infrastructure.Swagger;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -16,6 +18,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+const string CorsPolicyName = "FrontendCors";
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -23,6 +26,26 @@ builder.Logging.AddDebug();
 builder.Logging.AddLog4Net("log4net.config");
 
 builder.Services.AddControllers();
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        if (allowedOrigins.Length == 0)
+        {
+            policy.WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+
+            return;
+        }
+
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -44,17 +67,15 @@ builder.Services.AddSwaggerGen(options =>
     };
 
     options.AddSecurityDefinition("Bearer", securityScheme);
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { securityScheme, Array.Empty<string>() }
-    });
-
+    options.OperationFilter<AuthorizeOperationFilter>();
     options.OperationFilter<AuthLoginOperationFilter>();
 });
 
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
+builder.Services.AddHttpClient();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<GoogleAuthOptions>(builder.Configuration.GetSection("GoogleAuth"));
 
 var databaseProviderName = builder.Configuration.GetValue<string>("DatabaseProvider") ?? nameof(DatabaseProvider.MySql);
 if (!Enum.TryParse(databaseProviderName, ignoreCase: true, out DatabaseProvider databaseProvider))
@@ -82,14 +103,39 @@ if (!Enum.TryParse(databaseProviderName, ignoreCase: true, out DatabaseProvider 
 //});
 
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+builder.Services.AddSingleton<AppDataStore>();
+
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
+
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 
-builder.Services.AddScoped<IUserRepository, UserRepositoryMySql>();
-//builder.Services.AddScoped<IUserRepository, UserRepositorySql>();
-//builder.Services.AddScoped<IUserRepository, UserRepositoryOracle>();
-//builder.Services.AddScoped<IUserRepository, UserRepositoryPostgres>();
+switch (databaseProvider)
+{
+    case DatabaseProvider.MySql:
+        builder.Services.AddScoped<IUserRepository, UserRepositoryMySql>();
+        builder.Services.AddScoped<IUsersCrudRepository, UserRepositoryMySql>();
+        builder.Services.AddScoped<IRoleRepository, UserRepositoryMySql>();
+        break;
+    case DatabaseProvider.SqlServer:
+        builder.Services.AddScoped<IUserRepository, UserRepositorySql>();
+        builder.Services.AddScoped<IUsersCrudRepository, UserRepositorySql>();
+        builder.Services.AddScoped<IRoleRepository, UserRepositorySql>();
+        break;
+    case DatabaseProvider.PostgreSql:
+        builder.Services.AddScoped<IUserRepository, UserRepositoryPostgres>();
+        builder.Services.AddScoped<IUsersCrudRepository, UserRepositoryPostgres>();
+        builder.Services.AddScoped<IRoleRepository, UserRepositoryPostgres>();
+        break;
+    case DatabaseProvider.Oracle:
+        builder.Services.AddScoped<IUserRepository, UserRepositoryOracle>();
+        builder.Services.AddScoped<IUsersCrudRepository, UserRepositoryOracle>();
+        builder.Services.AddScoped<IRoleRepository, UserRepositoryOracle>();
+        break;
+    default:
+        throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'.");
+}
 
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
@@ -131,6 +177,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+app.UseCors(CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();

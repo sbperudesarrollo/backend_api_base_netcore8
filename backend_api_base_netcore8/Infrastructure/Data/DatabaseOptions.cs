@@ -7,9 +7,3 @@ public enum DatabaseProvider
     PostgreSql,
     Oracle
 }
-
-public class DatabaseOptions
-{
-    public DatabaseProvider Provider { get; set; } = DatabaseProvider.MySql;
-    public string ConnectionString { get; set; } = string.Empty;
-}
